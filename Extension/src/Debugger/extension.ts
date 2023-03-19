@@ -12,6 +12,7 @@ import { CppdbgDebugAdapterDescriptorFactory, CppvsdbgDebugAdapterDescriptorFact
 import { DebuggerType } from './configurations';
 import * as nls from 'vscode-nls';
 import { getActiveSshTarget, initializeSshTargets, selectSshTarget, SshTargetsProvider } from '../SSH/TargetsView/sshTargetsProvider';
+import { addCheckpointCmd, removeCheckpointCmd, refreshCppCheckpointsViewCmd, CheckpointsProvider } from './checkpointsView/checkpointsProvider';
 import { addSshTargetCmd, BaseNode, refreshCppSshTargetsViewCmd } from '../SSH/TargetsView/common';
 import { setActiveSshTarget, TargetLeafNode } from '../SSH/TargetsView/targetNodes';
 import { sshCommandToConfig } from '../SSH/sshCommandToConfig';
@@ -29,6 +30,9 @@ const localize: nls.LocalizeFunc = nls.loadMessageBundle();
 let sshTargetsViewEnabled: boolean = false;
 let sshTargetsViewSetting: string | undefined;
 let sshConfigWatcher: chokidar.FSWatcher | undefined;
+
+let checkpointsViewEnabled: boolean = false;
+let checkpointsViewSetting: string | undefined;
 
 export async function initialize(context: vscode.ExtensionContext): Promise<void> {
     // Activate Process Picker Commands
@@ -121,6 +125,13 @@ export async function initialize(context: vscode.ExtensionContext): Promise<void
             }
         }
     }));
+
+    // Checkpoints View
+    const checkpointsProvider: CheckpointsProvider = new CheckpointsProvider();
+    disposables.push(vscode.window.registerTreeDataProvider('CppCheckpointsView', checkpointsProvider));
+    disposables.push(vscode.commands.registerCommand(addCheckpointCmd, () => enableCheckpointsViewAndRun(addCheckpointImpl)));
+    disposables.push(vscode.commands.registerCommand(removeCheckpointCmd, (node?: BaseNode) => enableCheckpointsViewAndRun(removeCheckpointImpl, node)));
+    disposables.push(vscode.commands.registerCommand(refreshCppCheckpointsViewCmd, (node?: BaseNode) => enableCheckpointsViewAndRun((node?: BaseNode) => checkpointsProvider.refresh(node), node)));
 }
 
 export function dispose(): void {
@@ -222,4 +233,25 @@ async function removeSshTargetImpl(node: TargetLeafNode): Promise<boolean> {
     await writeSshConfiguration(node.sshConfigHostInfo.file, parsedSshConfig);
 
     return true;
+}
+
+async function enableCheckpointsViewAndRun<T>(func: (...paras: any[]) => T | Promise<T>, ...args: any[]): Promise<T> {
+    await enableCheckpointsView();
+    return func(...args);
+}
+
+async function enableCheckpointsView(): Promise<void> {
+    if (checkpointsViewEnabled || checkpointsViewSetting === 'disabled') {
+        return;
+    }
+    await vscode.commands.executeCommand('setContext', 'enableCppCheckpointsView', true);
+    checkpointsViewEnabled = true;
+}
+
+async function addCheckpointImpl(): Promise<string> {
+    return 'TODO-IMPLEMENT'
+}
+
+async function removeCheckpointImpl(): Promise<string> {
+    return 'TODO-IMPLEMENT'
 }

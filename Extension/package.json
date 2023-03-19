@@ -227,6 +227,11 @@
           "id": "CppSshTargetsView",
           "name": "%c_cpp.contributes.views.sshTargetsView.title%",
           "when": "enableCppSshTargetsView"
+        },
+        {
+          "id": "CppCheckpointsView",
+          "name": "%c_cpp.contributes.views.checkpointsView.title%",
+          "when": "enableCppCheckpointsView"
         }
       ]
     },
@@ -3106,6 +3111,30 @@
         "category": "C/C++",
         "title": "%c_cpp.command.sshTerminal.title%",
         "icon": "$(terminal)"
+      },
+      {
+        "command": "C_Cpp.addCheckpoint",
+        "category": "C/C++",
+        "title": "%c_cpp.command.addCheckpoint.title%",
+        "icon": "$(plus)"
+      },
+      {
+        "command": "C_Cpp.removeCheckpoint",
+        "category": "C/C++",
+        "title": "%c_cpp.command.removeCheckpoint.title%",
+        "icon": "$(remove)"
+      },
+      {
+        "command": "C_Cpp.loadCheckpoint",
+        "category": "C/C++",
+        "title": "%c_cpp.command.loadCheckpoint.title%",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "C_Cpp.refreshCppCheckpointsView",
+        "category": "C/C++",
+        "title": "%c_cpp.command.refreshCppCheckpointsView.title%",
+        "icon": "$(refresh)"
       }
     ],
     "keybindings": [
@@ -5311,6 +5340,16 @@
           "command": "C_Cpp.refreshCppSshTargetsView",
           "when": "view == CppSshTargetsView",
           "group": "navigation"
+        },
+        {
+          "command": "C_Cpp.addCheckpoint",
+          "when": "view == CppCheckpointsView",
+          "group": "navigation"
+        },
+        {
+          "command": "C_Cpp.refreshCppCheckpointsView",
+          "when": "view == CppCheckpointsView",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -5328,6 +5367,16 @@
           "command": "C_Cpp.removeSshTarget",
           "when": "viewItem == CppSshTargetsView.targetLeafRemovable || viewItem == CppSshTargetsView.targetLeafRemovableCanSetActive",
           "group": "inline@2"
+        },
+        {
+          "command": "C_Cpp.removeCheckpoint",
+          "when": "view == CppCheckpointsView",
+          "group": "inline@0"
+        },
+        {
+          "command": "C_Cpp.loadCheckpoint",
+          "when": "view == CppCheckpointsView",
+          "group": "inline@1"
         }
       ],
       "editor/title/run": [
