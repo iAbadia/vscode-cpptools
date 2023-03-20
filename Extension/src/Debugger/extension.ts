@@ -12,7 +12,8 @@ import { CppdbgDebugAdapterDescriptorFactory, CppvsdbgDebugAdapterDescriptorFact
 import { DebuggerType } from './configurations';
 import * as nls from 'vscode-nls';
 import { getActiveSshTarget, initializeSshTargets, selectSshTarget, SshTargetsProvider } from '../SSH/TargetsView/sshTargetsProvider';
-import { addCheckpointCmd, removeCheckpointCmd, refreshCppCheckpointsViewCmd, CheckpointsProvider } from './checkpointsView/checkpointsProvider';
+import { CheckpointNode } from './checkpointsView/common';
+import { addCheckpointCmd, removeCheckpointCmd, loadCheckpointCmd, refreshCppCheckpointsViewCmd, CheckpointsProvider } from './checkpointsView/checkpointsProvider';
 import { addSshTargetCmd, BaseNode, refreshCppSshTargetsViewCmd } from '../SSH/TargetsView/common';
 import { setActiveSshTarget, TargetLeafNode } from '../SSH/TargetsView/targetNodes';
 import { sshCommandToConfig } from '../SSH/sshCommandToConfig';
@@ -22,6 +23,7 @@ import { CppSettings } from '../LanguageServer/settings';
 import * as chokidar from 'chokidar';
 import { getSshChannel } from '../logger';
 import { pathAccessible } from '../common';
+// import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 
 // The extension deactivate method is asynchronous, so we handle the disposables ourselves instead of using extensionContext.subscriptions.
 const disposables: vscode.Disposable[] = [];
@@ -128,10 +130,13 @@ export async function initialize(context: vscode.ExtensionContext): Promise<void
 
     // Checkpoints View
     const checkpointsProvider: CheckpointsProvider = new CheckpointsProvider();
+    await enableCheckpointsView();
     disposables.push(vscode.window.registerTreeDataProvider('CppCheckpointsView', checkpointsProvider));
     disposables.push(vscode.commands.registerCommand(addCheckpointCmd, () => enableCheckpointsViewAndRun(addCheckpointImpl)));
-    disposables.push(vscode.commands.registerCommand(removeCheckpointCmd, (node?: BaseNode) => enableCheckpointsViewAndRun(removeCheckpointImpl, node)));
-    disposables.push(vscode.commands.registerCommand(refreshCppCheckpointsViewCmd, (node?: BaseNode) => enableCheckpointsViewAndRun((node?: BaseNode) => checkpointsProvider.refresh(node), node)));
+    disposables.push(vscode.commands.registerCommand(removeCheckpointCmd, (node?: CheckpointNode) => enableCheckpointsViewAndRun(removeCheckpointImpl, node?.getId())));
+    disposables.push(vscode.commands.registerCommand(loadCheckpointCmd, (node?: CheckpointNode) => enableCheckpointsViewAndRun(loadCheckpointImpl, node)));
+    disposables.push(vscode.commands.registerCommand(refreshCppCheckpointsViewCmd, (node?: CheckpointNode) => enableCheckpointsViewAndRun((node?: CheckpointNode) => checkpointsProvider.refresh(node), node)));
+    vscode.debug.onDidTerminateDebugSession((e) => checkpointsProvider.dispose())
 }
 
 export function dispose(): void {
@@ -248,10 +253,46 @@ async function enableCheckpointsView(): Promise<void> {
     checkpointsViewEnabled = true;
 }
 
-async function addCheckpointImpl(): Promise<string> {
-    return 'TODO-IMPLEMENT'
+async function addCheckpointImpl(): Promise<void> {
+    console.log('addCheckpointImpl')
+    const ds = vscode.debug.activeDebugSession;
+    if (ds) {
+        const args = {
+            expression: '-exec checkpoint',
+            context: 'repl'
+        };
+        await ds.customRequest('evaluate', args).then(({ result }) => {
+            vscode.commands.executeCommand(refreshCppCheckpointsViewCmd);
+        });
+    }
 }
 
-async function removeCheckpointImpl(): Promise<string> {
-    return 'TODO-IMPLEMENT'
+async function removeCheckpointImpl(id: string): Promise<void> {
+    console.log('removeCheckpointImpl ' + id)
+    const ds = vscode.debug.activeDebugSession;
+    if (ds) {
+        const args = {
+            expression: '-exec delete checkpoint ' + id,
+            context: 'repl'
+        };
+        await ds.customRequest('evaluate', args).then(({ result }) => {
+            vscode.commands.executeCommand(refreshCppCheckpointsViewCmd);
+        });
+    }
+}
+
+async function loadCheckpointImpl(id: string): Promise<void> {
+    console.log('loadCheckpointImpl ' + id)
+    const ds = vscode.debug.activeDebugSession;
+    if (ds) {
+        const args = {
+            expression: '-exec restart ' + id,
+            context: 'repl'
+        };
+        await ds.customRequest('evaluate', args).then(({ result }) => {
+            vscode.commands.executeCommand(refreshCppCheckpointsViewCmd);
+            // TODO: Depends on https://github.com/microsoft/MIEngine/pull/1367#event-9028558472
+            // ds.customRequest('sendInvalidate');
+        });
+    }
 }
