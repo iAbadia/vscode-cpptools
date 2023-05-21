@@ -289,10 +289,14 @@ async function loadCheckpointImpl(id: string): Promise<void> {
             expression: '-exec restart ' + id,
             context: 'repl'
         };
+        
         await ds.customRequest('evaluate', args).then(({ result }) => {
             vscode.commands.executeCommand(refreshCppCheckpointsViewCmd);
             // TODO: Depends on https://github.com/microsoft/MIEngine/pull/1367#event-9028558472
-            // ds.customRequest('sendInvalidate');
+            const invalidate_args = {
+                areas: ['all']
+            };
+            ds.customRequest('sendInvalidate', invalidate_args);
         });
     }
 }
